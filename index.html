@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Архив">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1512">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Архив Слизерина — Скрипторий и Запретная Секция</title>
+<style>
+  :root {
+    --bg-obsidian: #0b1512;
+    --bg-dungeon: #10201b;
+    --bg-stone: #162b24;
+    --bg-stone-alt: #1d362e;
+    --border-rune: rgba(148, 179, 168, 0.2);
+    --text-silver: #e4edea;
+    --text-muted: #93aba3;
+    --emerald: #2e8b68;
+    --emerald-glow: #6ee7b7;
+    --amethyst: #7c5cbf;
+    --sapphire: #3b6ea5;
+    --silver: #cbd5e1;
+    --shadow-deep: 0 12px 32px rgba(3, 10, 8, 0.55);
+    --radius-lg: 20px;
+    --radius-md: 13px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-obsidian);
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(46, 139, 104, 0.16) 0%, transparent 45%),
+      radial-gradient(circle at 82% 18%, rgba(124, 92, 191, 0.14) 0%, transparent 45%);
+    color: var(--text-silver);
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .shell { max-width: 1380px; margin: 0 auto; }
+  .topbar {
+    background: var(--bg-dungeon);
+    border: 1px solid var(--border-rune);
+    border-radius: var(--radius-lg);
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: var(--shadow-deep);
+    margin-bottom: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .crest {
+    width: 42px; height: 42px; border-radius: 13px;
+    background: linear-gradient(135deg, #1b4d3a, #2e8b68);
+    border: 1px solid var(--emerald-glow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .brand h1 { font-family: Georgia, serif; font-size: 1.25rem; color: var(--text-silver); }
+  .brand p { font-size: 0.78rem; color: var(--text-muted); }
+  .nav-tabs {
+    display: flex; background: var(--bg-obsidian); padding: 4px;
+    border-radius: 14px; border: 1px solid var(--border-rune); gap: 4px; flex-wrap: wrap;
+  }
+  .tab-btn {
+    border: none; background: transparent; color: var(--text-muted);
+    padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 0.85rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--emerald), #1f634a);
+    color: #fff;
+  }
+  .tools { display: flex; gap: 7px; flex-wrap: wrap; }
+  .pill-btn {
+    background: var(--bg-stone); border: 1px solid var(--border-rune);
+    color: var(--text-silver); padding: 7px 11px; border-radius: 10px;
+    font-size: 0.8rem; cursor: pointer;
+  }
+  .pill-btn:hover { border-color: var(--emerald-glow); }
+  .pill-btn.on { background: rgba(46,139,104,0.28); border-color: var(--emerald-glow); }
+  .view-sec { display: none; }
+  .view-sec.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  .grid-2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 960px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg-dungeon); border: 1px solid var(--border-rune);
+    border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-deep);
+    margin-bottom: 18px;
+  }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px dashed var(--border-rune); gap: 8px;
+  }
+  .card-head h2 { font-family: Georgia, serif; font-size: 1.05rem; }
+  .badge {
+    font-size: 0.74rem; padding: 3px 9px; border-radius: 99px;
+    background: var(--bg-stone-alt); color: var(--emerald-glow); border: 1px solid var(--border-rune);
+  }
+  .inp, .sel, .ta {
+    width: 100%; background: var(--bg-obsidian); border: 1px solid var(--border-rune);
+    border-radius: 9px; padding: 8px 11px; color: var(--text-silver); font-family: inherit; font-size: 0.88rem; outline: none;
+  }
+  .inp:focus, .ta:focus { border-color: var(--emerald-glow); }
+  .btn {
+    background: var(--emerald); color: #fff; border: none; border-radius: 9px;
+    padding: 8px 14px; font-weight: 600; font-size: 0.84rem; cursor: pointer; white-space: nowrap;
+  }
+  .btn.amethyst { background: var(--amethyst); }
+  .btn.sapphire { background: var(--sapphire); }
+  .btn.ghost { background: var(--bg-stone-alt); border: 1px solid var(--border-rune); }
+  .list-item {
+    background: var(--bg-stone); border: 1px solid var(--border-rune);
+    border-radius: 11px; padding: 9px 12px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .bingo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .bingo-cell {
+    background: var(--bg-stone); border: 1px solid var(--border-rune);
+    border-radius: 12px; padding: 12px 8px; text-align: center; font-size: 0.8rem;
+    cursor: pointer; min-height: 76px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .bingo-cell.done {
+    background: rgba(46, 139, 104, 0.3); border-color: var(--emerald-glow); color: #fff; font-weight: 600;
+  }
+  .shelf-row {
+    display: flex; gap: 10px; flex-wrap: wrap; min-height: 120px;
+    background: var(--bg-obsidian); border: 1px solid var(--border-rune);
+    border-radius: 14px; padding: 14px; align-items: flex-end;
+  }
+  .book-spine {
+    padding: 10px 12px; border-radius: 8px; color: #fff; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.2); max-width: 160px;
+  }
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(4, 10, 8, 0.78);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-card {
+    background: var(--bg-dungeon); border: 1px solid var(--border-rune);
+    border-radius: var(--radius-lg); padding: 22px; width: 100%; max-width: 520px;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="crest">🐍</div>
+      <div>
+        <h1>Архив Слизерина</h1>
+        <p>Скрипторий, Запретная секция и Большая библиотека</p>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="scriptorium">✒️ Скрипторий</button>
+      <button class="tab-btn" data-tab="forbidden">🕯️ Запретная секция</button>
+      <button class="tab-btn" data-tab="library">📚 Большая библиотека</button>
+    </nav>
+    <div class="tools">
+      <button class="pill-btn" id="ambientBtn">🌧️ Подземелье</button>
+      <button class="pill-btn" id="syncBtn">🔐 Код</button>
+      <button class="pill-btn" id="backupBtn">💾</button>
+      <button class="pill-btn" id="restoreBtn">📂</button>
+      <input type="file" id="restoreInput" accept=".json" style="display:none;">
+    </div>
+  </header>
+
+  <!-- 1. SCRIPTORIUM -->
+  <section class="view-sec active" id="tab-scriptorium">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h2>📜 Рукопись и Счётчик слов</h2>
+            <span class="badge" id="wordStatsBadge">0 слов • 0 зн.</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" class="inp" id="chapterTitleInp" placeholder="Название главы или сцены...">
+            <button class="btn" id="saveChapterBtn">Сохранить главу</button>
+          </div>
+          <textarea class="ta" id="manuscriptText" rows="12" placeholder="Пиши здесь... Поддерживается разделение глав через # в начале строки."></textarea>
+          <div id="chaptersList" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>🪄 Пергамент озарений (Заметки)</h2>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" class="inp" id="insightInp" placeholder="Внезапная идея для сюжета или диалога...">
+            <button class="btn amethyst" id="addInsightBtn">+</button>
+          </div>
+          <div id="insightsList"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h2>🔥 Писательский спринт (WPM)</h2>
+            <span class="badge" id="sprintWpmBadge">Скорость: 0 сл/мин</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="font-family:Georgia,serif; font-size:2rem; font-weight:700;" id="sprintTimer">15:00</div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn" id="sprintStartBtn">Старт</button>
+              <button class="btn ghost" id="sprintResetBtn">Сброс</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>⚗️ Алхимический котёл идей</h2>
+            <button class="btn amethyst" id="brewIdeaBtn" style="padding:5px 10px; font-size:0.78rem;">Сварить идею</button>
+          </div>
+          <div id="cauldronBox" style="background:var(--bg-obsidian); padding:12px; border-radius:12px; border:1px solid var(--border-rune); font-family:Georgia,serif; font-size:0.9rem;">
+            Нажми «Сварить идею», чтобы получить искру вдохновения для следующей сцены.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>🏆 Бинго Турнира Трёх Волшебников (3×3)</h2>
+            <button class="btn ghost" id="resetWriteBingoBtn" style="padding:4px 9px; font-size:0.75rem;">Сброс</button>
+          </div>
+          <div class="bingo-grid" id="writeBingoGrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. FORBIDDEN SECTION -->
+  <section class="view-sec" id="tab-forbidden">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h2>📚 Полка Запретной секции</h2>
+            <span class="badge" id="shelfCountBadge">0 томов</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="text" class="inp" id="shelfBookInp" placeholder="Название книги..." style="flex:1.5;">
+            <select class="sel" id="shelfColorSel" style="max-width:145px;">
+              <option value="#2e8b68">💚 Изумруд</option>
+              <option value="#7c5cbf">💜 Аметист</option>
+              <option value="#3b6ea5">💙 Сапфир</option>
+              <option value="#475569">🩶 Серебро</option>
+            </select>
+            <button class="btn" id="addShelfBookBtn">+ На полку</button>
+          </div>
+          <div class="shelf-row" id="bookshelfRow"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>⏳ Песочные часы чтения</h2>
+            <span class="badge" id="readMinutesBadge">Прочитано: 0 мин</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="font-family:Georgia,serif; font-size:2rem; font-weight:700;" id="readTimerDisplay">30:00</div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn" id="readTimerStartBtn">Старт</button>
+              <button class="btn ghost" id="readTimerResetBtn">Сброс</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h2>📖 Читательское бинго (3×3)</h2>
+            <button class="btn ghost" id="resetReadBingoBtn" style="padding:4px 9px; font-size:0.75rem;">Сброс</button>
+          </div>
+          <div class="bingo-grid" id="readBingoGrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. GREAT LIBRARY -->
+  <section class="view-sec" id="tab-library">
+    <div class="card">
+      <div class="card-head">
+        <h2>🏛️ Добавить книгу в Большую библиотеку</h2>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" class="inp" id="libTitleInp" placeholder="Название и автор..." style="flex:1.5; min-width:180px;">
+        <select class="sel" id="libShelfSel" style="max-width:170px;">
+          <option value="want">Хочу прочитать</option>
+          <option value="reading">Читаю сейчас</option>
+          <option value="read">Прочитано</option>
+        </select>
+        <input type="text" class="inp" id="libSourceInp" placeholder="Откуда (Threads, TikTok, друг)..." style="flex:1; min-width:150px;">
+        <button class="btn" id="addLibBookBtn">+ Добавить</button>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-head"><h2>✨ Хочу прочитать</h2><span class="badge" id="cntWant">0</span></div>
+        <div id="colWant"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>🕯️ Читаю сейчас</h2><span class="badge" id="cntReading">0</span></div>
+        <div id="colReading"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>🐍 Прочитано</h2><span class="badge" id="cntRead">0</span></div>
+        <div id="colRead"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Sync Modal -->
+<div class="modal-bg" id="syncModal">
+  <div class="modal-card">
+    <div class="card-head">
+      <h2>🔐 Код синхронизации (Умное слияние)</h2>
+      <button class="pill-btn" id="closeSyncBtn">✕</button>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">
+      Скопируй код на одном устройстве и вставь на другом — новые главы, заметки и книги добавятся без потери существующих.
+    </p>
+    <textarea class="ta" id="syncCodeTa" rows="5"></textarea>
+    <div style="display:flex; justify-content:space-between; gap:8px; margin-top:10px;">
+      <button class="btn sapphire" id="copySyncBtn">📋 Скопировать</button>
+      <button class="btn" id="mergeSyncBtn">📥 Объединить из кода</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const KEY = 'slytherin_archive_pwa_v1';
+  const WRITE_BINGO = [
+    '500 слов за раз', 'Спринт без пауз', 'Диалог с интригой',
+    'Описание атмосферы', 'Ночной сеанс', 'Правка главы',
+    'Новый поворот', 'Заметка на пергаменте', '1000 слов за день'
+  ];
+  const READ_BINGO = [
+    'Глава перед сном', '30 мин с чаем', 'Книга из рекомендаций',
+    'Выписать цитату', 'Тёмная академия', 'Фэнтези / магия',
+    'Оценить прочитанное', 'Без телефона 1 час', 'Финал книги'
+  ];
+  const PROMPTS = [
+    'В закрытом кабинете находят письмо, написанное чернилами, которые проявляются только в полночь.',
+    'Два союзника вынуждены скрывать один и тот же секрет от остальных.',
+    'Старинный артефакт начинает реагировать на присутствие человека, который никогда не держал его в руках.',
+    'В разгар шторма в библиотеке обнаруживается потайная дверь за стеллажом редких фолиантов.'
+  ];
+
+  let state = {
+    text: '',
+    chapters: [],
+    insights: [],
+    writeBingo: {},
+    readBingo: {},
+    shelf: [
+      { id: 'sb1', title: 'Тайны подземелий', color: '#2e8b68' }
+    ],
+    readMinutes: 0,
+    library: []
+  };
+
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved) state = { ...state, ...JSON.parse(saved) };
+  } catch (e) {}
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-sec').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Manuscript & word count
+  const mTa = document.getElementById('manuscriptText');
+  mTa.value = state.text || '';
+  function updateWords() {
+    const txt = mTa.value.trim();
+    const words = txt ? txt.split(/\s+/).length : 0;
+    document.getElementById('wordStatsBadge').textContent = `${words} слов • ${mTa.value.length} зн.`;
+    return words;
+  }
+  mTa.addEventListener('input', () => { state.text = mTa.value; updateWords(); save(); });
+  updateWords();
+
+  document.getElementById('saveChapterBtn').addEventListener('click', () => {
+    const title = document.getElementById('chapterTitleInp').value.trim() || `Глава ${state.chapters.length + 1}`;
+    if (!mTa.value.trim()) return;
+    state.chapters.unshift({ id: 'ch_' + Date.now(), title, body: mTa.value });
+    document.getElementById('chapterTitleInp').value = '';
+    save(); renderChapters();
+  });
+
+  function renderChapters() {
+    const wrap = document.getElementById('chaptersList');
+    wrap.innerHTML = '';
+    state.chapters.forEach(ch => {
+      const el = document.createElement('div');
+      el.className = 'list-item';
+      el.innerHTML = `<span style="cursor:pointer; flex:1;">📜 <strong>${ch.title}</strong> (${ch.body.trim().split(/\s+/).length} сл.)</span><button class="pill-btn">✕</button>`;
+      el.firstElementChild.addEventListener('click', () => { mTa.value = ch.body; state.text = ch.body; updateWords(); save(); });
+      el.querySelector('button').addEventListener('click', () => { state.chapters = state.chapters.filter(x => x.id !== ch.id); save(); renderChapters(); });
+      wrap.appendChild(el);
+    });
+  }
+  renderChapters();
+
+  // Insights
+  document.getElementById('addInsightBtn').addEventListener('click', () => {
+    const inp = document.getElementById('insightInp');
+    if (!inp.value.trim()) return;
+    state.insights.unshift({ id: 'ins_' + Date.now(), text: inp.value.trim() });
+    inp.value = ''; save(); renderInsights();
+  });
+  function renderInsights() {
+    const wrap = document.getElementById('insightsList');
+    wrap.innerHTML = '';
+    state.insights.forEach(i => {
+      const el = document.createElement('div');
+      el.className = 'list-item';
+      el.innerHTML = `<span style="font-size:0.86rem;">✦ ${i.text}</span><button class="pill-btn">✕</button>`;
+      el.querySelector('button').addEventListener('click', () => { state.insights = state.insights.filter(x => x.id !== i.id); save(); renderInsights(); });
+      wrap.appendChild(el);
+    });
+  }
+  renderInsights();
+
+  // Writing Sprint
+  let spSec = 15 * 60, spInt = null, spStartWords = 0;
+  document.getElementById('sprintStartBtn').addEventListener('click', function() {
+    if (spInt) { clearInterval(spInt); spInt = null; this.textContent = 'Старт'; return; }
+    spStartWords = updateWords();
+    this.textContent = 'Пауза';
+    spInt = setInterval(() => {
+      if (spSec > 0) {
+        spSec--;
+        const m = String(Math.floor(spSec / 60)).padStart(2, '0');
+        const s = String(spSec % 60).padStart(2, '0');
+        document.getElementById('sprintTimer').textContent = `${m}:${s}`;
+        const elapsedMin = Math.max(0.1, (15 * 60 - spSec) / 60);
+        const wpm = Math.max(0, Math.round((updateWords() - spStartWords) / elapsedMin));
+        document.getElementById('sprintWpmBadge').textContent = `Скорость: ${wpm} сл/мин`;
+      } else {
+        clearInterval(spInt); spInt = null; this.textContent = 'Старт';
+      }
+    }, 1000);
+  });
+  document.getElementById('sprintResetBtn').addEventListener('click', () => {
+    clearInterval(spInt); spInt = null; spSec = 15 * 60;
+    document.getElementById('sprintTimer').textContent = '15:00';
+    document.getElementById('sprintStartBtn').textContent = 'Старт';
+  });
+
+  // Cauldron
+  document.getElementById('brewIdeaBtn').addEventListener('click', () => {
+    document.getElementById('cauldronBox').textContent = '✨ ' + PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+  });
+
+  // Bingo
+  function renderBingo(elId, items, storeKey) {
+    const grid = document.getElementById(elId);
+    grid.innerHTML = '';
+    items.forEach((label, idx) => {
+      const cell = document.createElement('div');
+      cell.className = 'bingo-cell' + (state[storeKey][idx] ? ' done' : '');
+      cell.textContent = label;
+      cell.addEventListener('click', () => {
+        state[storeKey][idx] = !state[storeKey][idx];
+        save(); renderBingo(elId, items, storeKey);
+      });
+      grid.appendChild(cell);
+    });
+  }
+  renderBingo('writeBingoGrid', WRITE_BINGO, 'writeBingo');
+  renderBingo('readBingoGrid', READ_BINGO, 'readBingo');
+  document.getElementById('resetWriteBingoBtn').addEventListener('click', () => { state.writeBingo = {}; save(); renderBingo('writeBingoGrid', WRITE_BINGO, 'writeBingo'); });
+  document.getElementById('resetReadBingoBtn').addEventListener('click', () => { state.readBingo = {}; save(); renderBingo('readBingoGrid', READ_BINGO, 'readBingo'); });
+
+  // Shelf & Reading Timer
+  document.getElementById('addShelfBookBtn').addEventListener('click', () => {
+    const title = document.getElementById('shelfBookInp').value.trim();
+    if (!title) return;
+    state.shelf.push({ id: 'sb_' + Date.now(), title, color: document.getElementById('shelfColorSel').value });
+    document.getElementById('shelfBookInp').value = '';
+    save(); renderShelf();
+  });
+  function renderShelf() {
+    const row = document.getElementById('bookshelfRow');
+    row.innerHTML = '';
+    document.getElementById('shelfCountBadge').textContent = `${state.shelf.length} томов`;
+    state.shelf.forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'book-spine';
+      el.style.background = b.color;
+      el.textContent = b.title;
+      el.title = 'Нажми, чтобы убрать с полки';
+      el.addEventListener('click', () => { state.shelf = state.shelf.filter(x => x.id !== b.id); save(); renderShelf(); });
+      row.appendChild(el);
+    });
+  }
+  renderShelf();
+
+  let rdSec = 30 * 60, rdInt = null;
+  document.getElementById('readMinutesBadge').textContent = `Прочитано: ${state.readMinutes || 0} мин`;
+  document.getElementById('readTimerStartBtn').addEventListener('click', function() {
+    if (rdInt) { clearInterval(rdInt); rdInt = null; this.textContent = 'Старт'; return; }
+    this.textContent = 'Пауза';
+    rdInt = setInterval(() => {
+      if (rdSec > 0) {
+        rdSec--;
+        const m = String(Math.floor(rdSec / 60)).padStart(2, '0');
+        const s = String(rdSec % 60).padStart(2, '0');
+        document.getElementById('readTimerDisplay').textContent = `${m}:${s}`;
+        if (rdSec % 60 === 0) {
+          state.readMinutes = (state.readMinutes || 0) + 1;
+          document.getElementById('readMinutesBadge').textContent = `Прочитано: ${state.readMinutes} мин`;
+          save();
+        }
+      } else { clearInterval(rdInt); rdInt = null; this.textContent = 'Старт'; }
+    }, 1000);
+  });
+  document.getElementById('readTimerResetBtn').addEventListener('click', () => {
+    clearInterval(rdInt); rdInt = null; rdSec = 30 * 60;
+    document.getElementById('readTimerDisplay').textContent = '30:00';
+    document.getElementById('readTimerStartBtn').textContent = 'Старт';
+  });
+
+  // Great Library
+  document.getElementById('addLibBookBtn').addEventListener('click', () => {
+    const title = document.getElementById('libTitleInp').value.trim();
+    if (!title) return;
+    state.library.unshift({
+      id: 'lb_' + Date.now(),
+      title,
+      shelf: document.getElementById('libShelfSel').value,
+      source: document.getElementById('libSourceInp').value.trim()
+    });
+    document.getElementById('libTitleInp').value = '';
+    document.getElementById('libSourceInp').value = '';
+    save(); renderLibrary();
+  });
+
+  function renderLibrary() {
+    ['want', 'reading', 'read'].forEach(sh => {
+      const items = state.library.filter(b => b.shelf === sh);
+      document.getElementById('cnt' + sh.charAt(0).toUpperCase() + sh.slice(1)).textContent = items.length;
+      const col = document.getElementById('col' + sh.charAt(0).toUpperCase() + sh.slice(1));
+      col.innerHTML = '';
+      items.forEach(b => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.innerHTML = `<div><strong style="font-size:0.88rem;">${b.title}</strong>${b.source ? `<div style="font-size:0.74rem; color:var(--text-muted);">Источник: ${b.source}</div>` : ''}</div><div style="display:flex; gap:4px;"><button class="pill-btn" title="Переместить">→</button><button class="pill-btn">✕</button></div>`;
+        const [mvBtn, delBtn] = el.querySelectorAll('button');
+        mvBtn.addEventListener('click', () => {
+          const order = ['want', 'reading', 'read'];
+          b.shelf = order[(order.indexOf(b.shelf) + 1) % order.length];
+          save(); renderLibrary();
+        });
+        delBtn.addEventListener('click', () => { state.library = state.library.filter(x => x.id !== b.id); save(); renderLibrary(); });
+        col.appendChild(el);
+      });
+    });
+  }
+  renderLibrary();
+
+  // Ambient sound
+  let aCtx = null, aNode = null;
+  document.getElementById('ambientBtn').addEventListener('click', function() {
+    if (aNode) { aNode.stop(); aNode.disconnect(); aNode = null; this.classList.remove('on'); return; }
+    aCtx = aCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const buf = aCtx.createBuffer(1, aCtx.sampleRate * 2, aCtx.sampleRate);
+    const out = buf.getChannelData(0);
+    for (let i = 0; i < out.length; i++) out[i] = (Math.random() * 2 - 1) * 0.02;
+    const src = aCtx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const flt = aCtx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 500;
+    src.connect(flt); flt.connect(aCtx.destination); src.start();
+    aNode = src; this.classList.add('on');
+  });
+
+  // Sync & Backup
+  const sModal = document.getElementById('syncModal');
+  const sTa = document.getElementById('syncCodeTa');
+  document.getElementById('syncBtn').addEventListener('click', () => {
+    sTa.value = 'SLY:' + btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    sModal.classList.add('open');
+  });
+  document.getElementById('closeSyncBtn').addEventListener('click', () => sModal.classList.remove('open'));
+  document.getElementById('copySyncBtn').addEventListener('click', () => { sTa.select(); document.execCommand('copy'); });
+  document.getElementById('mergeSyncBtn').addEventListener('click', () => {
+    try {
+      const inc = JSON.parse(decodeURIComponent(escape(atob(sTa.value.trim().replace(/^SLY:/, '')))));
+      const merge = (a, b) => {
+        const m = new Map();
+        (a || []).forEach(x => m.set(x.id, x));
+        (b || []).forEach(x => { if (!m.has(x.id)) m.set(x.id, x); });
+        return Array.from(m.values());
+      };
+      state.chapters = merge(state.chapters, inc.chapters);
+      state.insights = merge(state.insights, inc.insights);
+      state.shelf = merge(state.shelf, inc.shelf);
+      state.library = merge(state.library, inc.library);
+      if (!state.text && inc.text) state.text = inc.text;
+      save(); location.reload();
+    } catch (e) { alert('Неверный код синхронизации'); }
+  });
+
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+    a.download = 'slytherin-archive-backup.json';
+    a.click();
+  });
+  const rInp = document.getElementById('restoreInput');
+  document.getElementById('restoreBtn').addEventListener('click', () => rInp.click());
+  rInp.addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = (ev) => { state = { ...state, ...JSON.parse(ev.target.result) }; save(); location.reload(); };
+    rd.readAsText(f);
+  });
+
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
